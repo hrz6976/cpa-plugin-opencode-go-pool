@@ -33,8 +33,8 @@ func sessionKeyFromOptions(opts pluginapi.SchedulerOptions) string {
 }
 
 type candidateRef struct {
-	candidate pluginapi.SchedulerAuthCandidate
-	account   *account
+	authID  string
+	account *account
 }
 
 // handleSchedulerPick applies pool health to auth selection.
@@ -61,16 +61,16 @@ func handleSchedulerPick(raw []byte) ([]byte, error) {
 	}
 
 	now := time.Now()
-	var ours []candidateRef
 	var healthy []candidateRef
+	managed := 0
 	impaired := false
 	for _, candidate := range req.Candidates {
 		acct, ok := p.byAuthID[candidate.ID]
 		if !ok {
 			continue
 		}
-		ref := candidateRef{candidate: candidate, account: acct}
-		ours = append(ours, ref)
+		managed++
+		ref := candidateRef{authID: candidate.ID, account: acct}
 		if reason := p.blockReason(acct, now); reason != "" {
 			impaired = true
 		} else {
@@ -78,7 +78,7 @@ func handleSchedulerPick(raw []byte) ([]byte, error) {
 		}
 	}
 
-	if len(ours) == 0 || !impaired || len(healthy) == 0 {
+	if managed == 0 || !impaired || len(healthy) == 0 {
 		// Nothing to manage, or nothing healthy left to offer: let the host's
 		// built-in selection behave exactly as without this plugin.
 		return okEnvelope(pluginapi.SchedulerPickResponse{Handled: false})
@@ -89,7 +89,7 @@ func handleSchedulerPick(raw []byte) ([]byte, error) {
 		if bound, ok := p.stickyGet(sessionKey, now); ok {
 			for _, ref := range healthy {
 				if ref.account.Name == bound {
-					return okEnvelope(pluginapi.SchedulerPickResponse{AuthID: ref.candidate.ID, Handled: true})
+					return okEnvelope(pluginapi.SchedulerPickResponse{AuthID: ref.authID, Handled: true})
 				}
 			}
 		}
@@ -100,5 +100,5 @@ func handleSchedulerPick(raw []byte) ([]byte, error) {
 	p.cursor[cursorKey] = (p.cursor[cursorKey] + 1) % (1 << 20)
 	chosen := healthy[index]
 	p.stickySet(sessionKey, chosen.account.Name, now)
-	return okEnvelope(pluginapi.SchedulerPickResponse{AuthID: chosen.candidate.ID, Handled: true})
+	return okEnvelope(pluginapi.SchedulerPickResponse{AuthID: chosen.authID, Handled: true})
 }

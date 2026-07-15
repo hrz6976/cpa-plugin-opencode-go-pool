@@ -94,7 +94,6 @@ func handleUsage(raw []byte) ([]byte, error) {
 	}
 
 	st.Failed++
-	st.LastErrorAt = now
 	var logMsg string
 	fields := map[string]any{"account": acct.Name, "status": rec.Failure.StatusCode, "model": rec.Model}
 

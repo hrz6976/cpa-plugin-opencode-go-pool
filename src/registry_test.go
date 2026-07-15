@@ -11,7 +11,7 @@ import (
 )
 
 func TestCustomRegistry(t *testing.T) {
-	raw, errRead := os.ReadFile("registry.json")
+	raw, errRead := os.ReadFile("../registry.json")
 	if errRead != nil {
 		t.Fatal(errRead)
 	}

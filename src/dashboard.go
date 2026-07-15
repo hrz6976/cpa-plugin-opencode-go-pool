@@ -27,14 +27,25 @@ var (
 		windowWeekly:   regexp.MustCompile(`weeklyUsage:\$R\[\d+\]=\{[^}]*resetInSec:(-?\d+(?:\.\d+)?)[^}]*usagePercent:(-?\d+(?:\.\d+)?)[^}]*\}`),
 		windowMonthly:  regexp.MustCompile(`monthlyUsage:\$R\[\d+\]=\{[^}]*resetInSec:(-?\d+(?:\.\d+)?)[^}]*usagePercent:(-?\d+(?:\.\d+)?)[^}]*\}`),
 	}
-	slotLabelPattern = regexp.MustCompile(`data-slot="usage-label">([^<]+)<`)
-	slotValuePattern = regexp.MustCompile(`data-slot="usage-value">[^0-9]*(\d+(?:\.\d+)?)`)
-	slotResetPattern = regexp.MustCompile(`data-slot="(reset-time|reset-now)">([\s\S]*?)</span>`)
-	humanDayPattern  = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*days?`)
-	humanHourPattern = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*hours?`)
-	humanMinPattern  = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*minutes?`)
-	humanSecPattern  = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*seconds?`)
+	slotLabelPattern   = regexp.MustCompile(`data-slot="usage-label">([^<]+)<`)
+	slotValuePattern   = regexp.MustCompile(`data-slot="usage-value">[^0-9]*(\d+(?:\.\d+)?)`)
+	slotResetPattern   = regexp.MustCompile(`data-slot="(reset-time|reset-now)">([\s\S]*?)</span>`)
+	humanDayPattern    = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*days?`)
+	humanHourPattern   = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*hours?`)
+	humanMinPattern    = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*minutes?`)
+	humanSecPattern    = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*seconds?`)
+	resetPrefixPattern = regexp.MustCompile(`(?i)resets?\s*in\s*`)
 )
+
+var humanDurationParts = [...]struct {
+	pattern *regexp.Regexp
+	seconds float64
+}{
+	{humanDayPattern, 86400},
+	{humanHourPattern, 3600},
+	{humanMinPattern, 60},
+	{humanSecPattern, 1},
+}
 
 type windowUsage struct {
 	UsagePercent int
@@ -89,7 +100,7 @@ func parseDashboardHTML(html string) map[string]windowUsage {
 		resetSec := int64(0)
 		if resetMatch[1] == "reset-time" {
 			cleaned := strings.NewReplacer("<!--$-->", "", "<!--/-->", "").Replace(resetMatch[2])
-			cleaned = regexp.MustCompile(`(?i)resets?\s*in\s*`).ReplaceAllString(cleaned, "")
+			cleaned = resetPrefixPattern.ReplaceAllString(cleaned, "")
 			parsed, ok := parseHumanDuration(cleaned)
 			if !ok {
 				continue
@@ -109,15 +120,10 @@ func parseHumanDuration(raw string) (int64, bool) {
 	}
 	total := float64(0)
 	found := false
-	for pattern, mult := range map[*regexp.Regexp]float64{
-		humanDayPattern:  86400,
-		humanHourPattern: 3600,
-		humanMinPattern:  60,
-		humanSecPattern:  1,
-	} {
-		if m := pattern.FindStringSubmatch(normalized); m != nil {
+	for _, part := range humanDurationParts {
+		if m := part.pattern.FindStringSubmatch(normalized); m != nil {
 			v, _ := strconv.ParseFloat(m[1], 64)
-			total += v * mult
+			total += v * part.seconds
 			found = true
 		}
 	}

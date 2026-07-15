@@ -22,15 +22,12 @@ type cdsQuota struct {
 }
 
 type cdsErrorDetail struct {
-	Code       string `json:"code"`
 	Message    string `json:"message"`
 	HTTPStatus int    `json:"http_status"`
 }
 
 type cdsRecord struct {
 	AuthID         string          `json:"auth_id"`
-	Model          string          `json:"model"`
-	Status         string          `json:"status"`
 	NextRetryAfter time.Time       `json:"next_retry_after"`
 	Reason         string          `json:"reason"`
 	Quota          cdsQuota        `json:"quota"`

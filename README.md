@@ -33,6 +33,13 @@ automatically and keeps their health state synchronized.
 - Go 1.26 with CGO enabled and a local C compiler toolchain
 - `save-cooldown-status: true` in CPA for reliable persisted cooldown signals
 
+## Repository layout
+
+- `src/` contains the plugin implementation and tests.
+- `.github/scripts/` contains release-only packaging tooling.
+- `registry.json` is the custom CPA plugin-store registry.
+- `config.example.yaml` contains the relevant CPA configuration sections.
+
 ## Installation
 
 ### CPA Manager Plus plugin store

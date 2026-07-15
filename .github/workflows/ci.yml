@@ -34,4 +34,4 @@ jobs:
           mkdir -p dist
           CGO_ENABLED=1 go build -buildvcs=false -trimpath -buildmode=c-shared \
             -ldflags "-s -w -X main.pluginVersion=ci" \
-            -o dist/opencode-go-pool-ci.so .
+            -o dist/opencode-go-pool-ci.so ./src

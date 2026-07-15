@@ -13,7 +13,7 @@ build:
 	test "$$($(GO) env GOARCH)" = "amd64"
 	mkdir -p "$(dir $(OUT))"
 	CGO_ENABLED=1 $(GO) build -buildvcs=false -trimpath -buildmode=c-shared \
-		-ldflags "-s -w -X main.pluginVersion=$(VERSION)" -o "$(OUT)" .
+		-ldflags "-s -w -X main.pluginVersion=$(VERSION)" -o "$(OUT)" ./src
 	rm -f dist/*.h
 
 package: build

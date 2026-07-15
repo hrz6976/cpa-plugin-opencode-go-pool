@@ -11,11 +11,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v7/sdk/pluginapi"
 )
 
-var (
-	jsonMarshal   = json.Marshal
-	jsonUnmarshal = json.Unmarshal
-)
-
 const fixtureConfig = `
 openai-compatibility:
   - name: opencode-go
@@ -327,7 +322,7 @@ func TestAccountConfigUISettings(t *testing.T) {
 
 func mustJSON(t *testing.T, v any) []byte {
 	t.Helper()
-	raw, err := jsonMarshal(v)
+	raw, err := json.Marshal(v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -337,14 +332,14 @@ func mustJSON(t *testing.T, v any) []byte {
 func decodePickResponse(t *testing.T, raw []byte) pluginapi.SchedulerPickResponse {
 	t.Helper()
 	var env envelope
-	if err := jsonUnmarshal(raw, &env); err != nil {
+	if err := json.Unmarshal(raw, &env); err != nil {
 		t.Fatal(err)
 	}
 	if !env.OK {
 		t.Fatalf("envelope not ok: %+v", env.Error)
 	}
 	var resp pluginapi.SchedulerPickResponse
-	if err := jsonUnmarshal(env.Result, &resp); err != nil {
+	if err := json.Unmarshal(env.Result, &resp); err != nil {
 		t.Fatal(err)
 	}
 	return resp

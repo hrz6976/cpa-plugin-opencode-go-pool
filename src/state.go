@@ -11,7 +11,7 @@ const (
 	windowMonthly  = "monthly"
 )
 
-var windowNames = []string{windowFiveHour, windowWeekly, windowMonthly}
+var windowNames = [...]string{windowFiveHour, windowWeekly, windowMonthly}
 
 // windowState tracks one quota window of a logical account.
 type windowState struct {
@@ -32,7 +32,6 @@ type accountState struct {
 	SuspendedUntil time.Time
 	SuspendReason  string
 	LastError      string
-	LastErrorAt    time.Time
 	LastUsedAt     time.Time
 	Success        int64
 	Failed         int64
@@ -78,23 +77,17 @@ type pool struct {
 	// config-file overrides.
 	uiSettings map[string]uiAccountSettings
 
-	openaiProvider string
-	configError    string
+	configError string
 }
 
-var (
-	poolMu     sync.Mutex
-	globalPool = &pool{
-		byAuthID: make(map[string]*account),
-		states:   make(map[string]*accountState),
-		sticky:   make(map[string]stickyEntry),
-		cursor:   make(map[string]int),
-	}
-)
+var globalPool = &pool{
+	byAuthID: make(map[string]*account),
+	states:   make(map[string]*accountState),
+	sticky:   make(map[string]stickyEntry),
+	cursor:   make(map[string]int),
+}
 
 func currentPool() *pool {
-	poolMu.Lock()
-	defer poolMu.Unlock()
 	return globalPool
 }
 
@@ -110,15 +103,16 @@ func identityKey(acct *account) string {
 // reconfigure rebuilds account mapping from settings, keeping runtime state
 // for accounts whose identity persists.
 func (p *pool) reconfigure(cfg settings, accounts []*account, configErr error) {
+	uiSettings := loadUISettings(cfg.StateDir)
+	if uiSettings == nil {
+		uiSettings = make(map[string]uiAccountSettings)
+	}
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.cfg = cfg
 	p.accounts = accounts
-	p.openaiProvider = openaiProviderKey(cfg.CompatName)
-	p.uiSettings = loadUISettings(cfg.StateDir)
-	if p.uiSettings == nil {
-		p.uiSettings = make(map[string]uiAccountSettings)
-	}
+	p.uiSettings = uiSettings
 	p.byAuthID = make(map[string]*account, len(accounts)*2)
 	if configErr != nil {
 		p.configError = configErr.Error()

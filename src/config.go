@@ -12,22 +12,21 @@ import (
 )
 
 const (
-	defaultCompatName     = "opencode-go"
-	defaultClaudeBaseURL  = "https://opencode.ai/zen/go"
-	defaultCPAConfigPath  = "config.yaml"
-	defaultThresholdPct   = 97
-	defaultStickyTTL      = 24 * time.Hour
-	defaultSuspend        = 30 * time.Minute
-	defaultFallbackCool   = 10 * time.Minute
-	defaultRefreshEvery   = 3 * time.Minute
-	defaultStaleAfter     = 20 * time.Minute
-	defaultCooldownDir    = "/root/.cli-proxy-api"
-	defaultStateDir       = "/root/.cli-proxy-api/opencode-go-pool"
-	cooldownScanInterval  = 10 * time.Second
-	maxWindowBlock        = 35 * 24 * time.Hour
-	claudeProviderKey     = "claude"
-	openaiCompatKindBase  = "openai-compatibility"
-	openaiCompatProviderP = "openai-compatible-"
+	defaultCompatName    = "opencode-go"
+	defaultClaudeBaseURL = "https://opencode.ai/zen/go"
+	defaultCPAConfigPath = "config.yaml"
+	defaultThresholdPct  = 97
+	defaultStickyTTL     = 24 * time.Hour
+	defaultSuspend       = 30 * time.Minute
+	defaultFallbackCool  = 10 * time.Minute
+	defaultRefreshEvery  = 3 * time.Minute
+	defaultStaleAfter    = 20 * time.Minute
+	defaultCooldownDir   = "/root/.cli-proxy-api"
+	defaultStateDir      = "/root/.cli-proxy-api/opencode-go-pool"
+	cooldownScanInterval = 10 * time.Second
+	maxWindowBlock       = 35 * 24 * time.Hour
+	claudeProviderKey    = "claude"
+	openaiCompatKindBase = "openai-compatibility"
 )
 
 // accountOverride carries optional per-account settings from the plugin
@@ -41,7 +40,6 @@ type accountOverride struct {
 }
 
 type pluginConfig struct {
-	Enabled          bool              `yaml:"enabled"`
 	CompatName       string            `yaml:"compat-name"`
 	ClaudeBaseURL    string            `yaml:"claude-base-url"`
 	CPAConfigPath    string            `yaml:"cpa-config-path"`
@@ -57,7 +55,6 @@ type pluginConfig struct {
 }
 
 type settings struct {
-	Enabled          bool
 	CompatName       string
 	ClaudeBaseURL    string
 	CPAConfigPath    string
@@ -90,7 +87,6 @@ func decodeSettings(configYAML []byte) settings {
 		_ = yaml.Unmarshal(configYAML, &cfg)
 	}
 	out := settings{
-		Enabled:          cfg.Enabled,
 		CompatName:       strings.ToLower(strings.TrimSpace(cfg.CompatName)),
 		ClaudeBaseURL:    strings.TrimSpace(cfg.ClaudeBaseURL),
 		CPAConfigPath:    strings.TrimSpace(cfg.CPAConfigPath),
@@ -279,15 +275,4 @@ func keySuffix(key string) string {
 		return key
 	}
 	return key[len(key)-6:]
-}
-
-func openaiProviderKey(compatName string) string {
-	name := strings.ToLower(strings.TrimSpace(compatName))
-	if name == "" || name == openaiCompatKindBase || strings.HasPrefix(name, openaiCompatProviderP) {
-		if name == "" {
-			return openaiCompatKindBase
-		}
-		return name
-	}
-	return openaiCompatProviderP + name
 }

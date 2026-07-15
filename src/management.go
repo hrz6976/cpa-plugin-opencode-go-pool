@@ -239,7 +239,6 @@ func saveAccountConfig(name, workspaceID, cookie string, clear bool) (int, error
 	}
 	p := currentPool()
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	for _, acct := range p.accounts {
 		if acct.Name != name {
 			continue
@@ -258,20 +257,22 @@ func saveAccountConfig(name, workspaceID, cookie string, clear bool) (int, error
 			p.uiSettings[id] = current
 		}
 		if errSave := saveUISettings(p.cfg.StateDir, p.uiSettings); errSave != nil {
+			p.mu.Unlock()
 			return http.StatusInternalServerError, errSave
 		}
 		st := p.stateFor(acct)
 		st.DashboardError = ""
+		p.mu.Unlock()
 		hostLog("info", "account dashboard credentials updated", map[string]any{"account": name, "cleared": clear})
 		return http.StatusOK, nil
 	}
+	p.mu.Unlock()
 	return http.StatusNotFound, errUnknownAccount
 }
 
 func unblockAccount(name string) bool {
 	p := currentPool()
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	for _, acct := range p.accounts {
 		if acct.Name != name {
 			continue
@@ -286,8 +287,10 @@ func unblockAccount(name string) bool {
 			w.UsagePercent = -1
 			w.ResetAt = time.Time{}
 		}
+		p.mu.Unlock()
 		hostLog("info", "account manually unblocked", map[string]any{"account": name})
 		return true
 	}
+	p.mu.Unlock()
 	return false
 }
