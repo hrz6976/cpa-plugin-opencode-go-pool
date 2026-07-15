@@ -1,21 +1,30 @@
 VERSION ?= 0.1.0
-GO_IMAGE ?= golang:1.26-bookworm
-CACHE ?= /tmp/gocache-ocgp
+GO ?= go
+PLUGIN_ID = opencode-go-pool
 OUT = dist/opencode-go-pool-v$(VERSION).so
+ARCHIVE = dist/$(PLUGIN_ID)_$(VERSION)_linux_amd64.zip
+ARCHIVE_CHECKSUM = $(ARCHIVE).sha256
 DEPLOY_DIR ?= ../../plugins/linux/amd64
 
-.PHONY: build test deploy clean
+.PHONY: build package test deploy clean
 
 build:
+	test "$$($(GO) env GOOS)" = "linux"
+	test "$$($(GO) env GOARCH)" = "amd64"
 	mkdir -p "$(dir $(OUT))"
-	docker run --rm -v "$(CURDIR)":/src -v $(CACHE):/gocache -w /src \
-		-e GOMODCACHE=/gocache/mod -e GOCACHE=/gocache/build $(GO_IMAGE) \
-		sh -c 'CGO_ENABLED=1 go build -buildvcs=false -trimpath -buildmode=c-shared -ldflags "-s -w -X main.pluginVersion=$(VERSION)" -o $(OUT) . && rm -f dist/*.h'
+	CGO_ENABLED=1 $(GO) build -buildvcs=false -trimpath -buildmode=c-shared \
+		-ldflags "-s -w -X main.pluginVersion=$(VERSION)" -o "$(OUT)" .
+	rm -f dist/*.h
+
+package: build
+	$(GO) run -buildvcs=false ./.github/scripts/package-release.go \
+			-library "$(OUT)" -entry "$(PLUGIN_ID).so" \
+			-archive "$(ARCHIVE)" -checksum "$(ARCHIVE_CHECKSUM)"
+	cp "$(ARCHIVE_CHECKSUM)" dist/checksums.txt
 
 test:
-	docker run --rm -v "$(CURDIR)":/src -v $(CACHE):/gocache -w /src \
-		-e GOMODCACHE=/gocache/mod -e GOCACHE=/gocache/build $(GO_IMAGE) \
-		sh -c 'go vet ./... && go test ./...'
+	$(GO) vet ./...
+	$(GO) test ./...
 
 deploy: build
 	mkdir -p "$(DEPLOY_DIR)"

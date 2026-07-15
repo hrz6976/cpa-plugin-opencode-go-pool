@@ -24,6 +24,9 @@ claude-api-key:
 
 plugins:
   enabled: true
+  # Add this source to install and update the plugin from CPA Manager Plus.
+  store-sources:
+    - https://raw.githubusercontent.com/hrz6976/cpa-plugin-opencode-go-pool/main/registry.json
   configs:
     opencode-go-pool:
       enabled: true

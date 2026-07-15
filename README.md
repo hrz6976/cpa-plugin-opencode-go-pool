@@ -30,16 +30,41 @@ automatically and keeps their health state synchronized.
 
 - CLIProxyAPI v7.2.67 or a compatible release with the C ABI plugin system
 - Linux amd64 with glibc 2.36 or newer for the default build target
-- Docker for the provided build targets, or Go 1.26 with CGO enabled
+- Go 1.26 with CGO enabled and a local C compiler toolchain
 - `save-cooldown-status: true` in CPA for reliable persisted cooldown signals
 
 ## Installation
+
+### CPA Manager Plus plugin store
+
+Add this custom registry to CPA's `config.yaml` and make sure the plugin
+directory is persisted across container replacements:
+
+```yaml
+plugins:
+  enabled: true
+  dir: plugins
+  store-sources:
+    - https://raw.githubusercontent.com/hrz6976/cpa-plugin-opencode-go-pool/main/registry.json
+```
+
+Reload or restart CPA, open **CPA Manager Plus → Plugin Store**, refresh the
+store, and install **OpenCode Go Pool**. The installer verifies the release
+checksum and writes the versioned library under `plugins/linux/amd64/`.
+
+The published package currently supports Linux amd64 with glibc 2.36 or newer.
+Installing the plugin does not create OpenCode credentials; complete the
+[configuration](#configuration) section below before enabling production
+traffic.
+
+### Manual build and installation
 
 Build the shared library:
 
 ```sh
 make test
 make build VERSION=0.1.0
+make package VERSION=0.1.0  # produce the CPA plugin-store zip + checksums
 ```
 
 Copy `dist/opencode-go-pool-v0.1.0.so` into CPA's
@@ -156,8 +181,7 @@ so the host can produce its normal error/retry behavior.
 
 ## Development
 
-The default targets run in a pinned Go container and keep module/build caches
-outside the repository:
+The default targets use the local Go and C toolchains:
 
 ```sh
 make test
@@ -165,8 +189,11 @@ make build
 make clean
 ```
 
-`make test` runs `go vet ./...` and `go test ./...`. CI additionally checks
-formatting and builds the C ABI shared library.
+`make test` runs `go vet ./...` and `go test ./...`. `make package` creates
+`opencode-go-pool_<version>_linux_amd64.zip` and `checksums.txt` in `dist/`
+using the exact CPA plugin-store layout. CI additionally checks formatting and
+builds the C ABI shared library. Pushing a `v<version>` tag publishes the
+installer artifacts as a GitHub Release.
 
 ## Known limitations
 
