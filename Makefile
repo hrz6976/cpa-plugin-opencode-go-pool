@@ -1,4 +1,4 @@
-VERSION ?= 0.1.0
+VERSION ?= 0.2.0
 GO ?= go
 PLUGIN_ID = opencode-go-pool
 OUT = dist/opencode-go-pool-v$(VERSION).so

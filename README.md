@@ -70,11 +70,11 @@ Build the shared library:
 
 ```sh
 make test
-make build VERSION=0.1.0
-make package VERSION=0.1.0  # produce the CPA plugin-store zip + checksums
+make build VERSION=0.2.0
+make package VERSION=0.2.0  # produce the CPA plugin-store zip + checksums
 ```
 
-Copy `dist/opencode-go-pool-v0.1.0.so` into CPA's
+Copy `dist/opencode-go-pool-v0.2.0.so` into CPA's
 `plugins/linux/amd64/` directory and mount that directory at
 `/CLIProxyAPI/plugins` in the CPA container. The plugin ID is derived from the
 filename by removing the version suffix, so the example above registers as
