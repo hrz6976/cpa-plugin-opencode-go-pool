@@ -73,16 +73,6 @@ func pluginRegistration() registration {
 			GitHubRepository: "https://github.com/hrz6976/cpa-plugin-opencode-go-pool",
 			ConfigFields: []pluginapi.ConfigField{
 				{
-					Name:        "compat-name",
-					Type:        pluginapi.ConfigFieldTypeString,
-					Description: "Name of the openai-compatibility entry holding OpenCode Go API keys (default opencode-go).",
-				},
-				{
-					Name:        "claude-base-url",
-					Type:        pluginapi.ConfigFieldTypeString,
-					Description: "Base URL identifying OpenCode Go claude-api-key entries (default https://opencode.ai/zen/go).",
-				},
-				{
 					Name:        "cpa-config-path",
 					Type:        pluginapi.ConfigFieldTypeString,
 					Description: "Path of the CPA config file used to auto-discover accounts (default config.yaml).",

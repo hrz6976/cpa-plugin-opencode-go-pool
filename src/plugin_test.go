@@ -24,7 +24,7 @@ claude-api-key:
   - api-key: sk-key-one
     base-url: https://opencode.ai/zen/go
   - api-key: sk-key-two
-    base-url: https://opencode.ai/zen/go
+    base-url: https://example.invalid/base-url-is-not-a-filter
   - api-key: sk-key-three
     base-url: https://opencode.ai/zen/go
   - api-key: sk-other

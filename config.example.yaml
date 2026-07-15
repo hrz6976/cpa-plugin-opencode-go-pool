@@ -30,8 +30,6 @@ plugins:
   configs:
     opencode-go-pool:
       enabled: true
-      compat-name: opencode-go
-      claude-base-url: https://opencode.ai/zen/go
       cpa-config-path: config.yaml
       threshold-percent: 97
       sticky-ttl: 24h

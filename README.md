@@ -108,8 +108,6 @@ Default plugin settings are:
 
 | Setting | Default |
 | --- | --- |
-| `compat-name` | `opencode-go` |
-| `claude-base-url` | `https://opencode.ai/zen/go` |
 | `cpa-config-path` | `config.yaml` |
 | `threshold-percent` | `97` |
 | `sticky-ttl` | `24h` |
@@ -121,6 +119,10 @@ Default plugin settings are:
 The plugin reads CLIProxyAPI's `auth-dir` from the same config file. Host
 cooldown records are read from that directory, and plugin-owned UI settings
 are stored under `<auth-dir>/opencode-go-pool`.
+
+Account discovery is intentionally OpenCode-specific: the plugin reads the
+`opencode-go` compatibility provider and pairs Claude credentials by matching
+API key. Provider base URLs do not need to be repeated in plugin settings.
 
 Dashboard polling is optional. Without it, passive 429/401/403 handling and
 cross-protocol health synchronization still work.

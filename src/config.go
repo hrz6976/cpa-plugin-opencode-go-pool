@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	defaultCompatName    = "opencode-go"
-	defaultClaudeBaseURL = "https://opencode.ai/zen/go"
+	opencodeCompatName   = "opencode-go"
 	defaultCPAConfigPath = "config.yaml"
 	defaultThresholdPct  = 97
 	defaultStickyTTL     = 24 * time.Hour
@@ -40,8 +39,6 @@ type accountOverride struct {
 }
 
 type pluginConfig struct {
-	CompatName       string            `yaml:"compat-name"`
-	ClaudeBaseURL    string            `yaml:"claude-base-url"`
 	CPAConfigPath    string            `yaml:"cpa-config-path"`
 	ThresholdPercent int               `yaml:"threshold-percent"`
 	StickyTTL        string            `yaml:"sticky-ttl"`
@@ -53,8 +50,6 @@ type pluginConfig struct {
 }
 
 type settings struct {
-	CompatName       string
-	ClaudeBaseURL    string
 	CPAConfigPath    string
 	ThresholdPercent int
 	StickyTTL        time.Duration
@@ -84,8 +79,6 @@ func decodeSettings(configYAML []byte) settings {
 		_ = yaml.Unmarshal(configYAML, &cfg)
 	}
 	out := settings{
-		CompatName:       strings.ToLower(strings.TrimSpace(cfg.CompatName)),
-		ClaudeBaseURL:    strings.TrimSpace(cfg.ClaudeBaseURL),
 		CPAConfigPath:    strings.TrimSpace(cfg.CPAConfigPath),
 		ThresholdPercent: cfg.ThresholdPercent,
 		StickyTTL:        parseDurationOr(cfg.StickyTTL, defaultStickyTTL),
@@ -94,12 +87,6 @@ func decodeSettings(configYAML []byte) settings {
 		RefreshInterval:  parseDurationOr(cfg.RefreshInterval, defaultRefreshEvery),
 		StaleAfter:       parseDurationOr(cfg.StaleAfter, defaultStaleAfter),
 		Overrides:        cfg.Accounts,
-	}
-	if out.CompatName == "" {
-		out.CompatName = defaultCompatName
-	}
-	if out.ClaudeBaseURL == "" {
-		out.ClaudeBaseURL = defaultClaudeBaseURL
 	}
 	if out.CPAConfigPath == "" {
 		out.CPAConfigPath = defaultCPAConfigPath
@@ -250,7 +237,7 @@ func discoverAccounts(cfg settings) ([]*account, string, error) {
 			entry := compat.APIKeyEntries[j]
 			key := strings.TrimSpace(entry.APIKey)
 			id := idGen.next(kind, key, base, strings.TrimSpace(entry.ProxyURL))
-			if providerName != cfg.CompatName || key == "" {
+			if providerName != opencodeCompatName || key == "" {
 				continue
 			}
 			acct := ensure(key)
@@ -267,10 +254,10 @@ func discoverAccounts(cfg settings) ([]*account, string, error) {
 		}
 		base := strings.TrimSpace(ck.BaseURL)
 		id := idGen.next("claude:apikey", key, base)
-		if !strings.EqualFold(strings.TrimRight(base, "/"), strings.TrimRight(cfg.ClaudeBaseURL, "/")) {
+		acct, ok := byKey[key]
+		if !ok {
 			continue
 		}
-		acct := ensure(key)
 		acct.ClaudeID = id
 	}
 
