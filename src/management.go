@@ -256,7 +256,7 @@ func saveAccountConfig(name, workspaceID, cookie string, clear bool) (int, error
 			}
 			p.uiSettings[id] = current
 		}
-		if errSave := saveUISettings(p.cfg.StateDir, p.uiSettings); errSave != nil {
+		if errSave := saveUISettings(pluginStateDir(p.cfg.AuthDir), p.uiSettings); errSave != nil {
 			p.mu.Unlock()
 			return http.StatusInternalServerError, errSave
 		}

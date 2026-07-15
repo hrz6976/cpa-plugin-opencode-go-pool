@@ -100,7 +100,7 @@ func (r cdsRecord) window() string {
 // logical accounts.
 func refreshHostCooldowns(p *pool) {
 	p.mu.Lock()
-	dir := p.cfg.CooldownDir
+	dir := p.cfg.AuthDir
 	if dir == "" || len(p.byAuthID) == 0 {
 		p.mu.Unlock()
 		return

@@ -117,8 +117,10 @@ Default plugin settings are:
 | `fallback-cooldown` | `10m` |
 | `dashboard-refresh-interval` | `3m` |
 | `dashboard-stale-after` | `20m` |
-| `cooldown-dir` | `/root/.cli-proxy-api` |
-| `state-dir` | `/root/.cli-proxy-api/opencode-go-pool` |
+
+The plugin reads CLIProxyAPI's `auth-dir` from the same config file. Host
+cooldown records are read from that directory, and plugin-owned UI settings
+are stored under `<auth-dir>/opencode-go-pool`.
 
 Dashboard polling is optional. Without it, passive 429/401/403 handling and
 cross-protocol health synchronization still work.
@@ -134,7 +136,7 @@ Open the CPA plugin page at:
 Each account can be configured with its OpenCode workspace ID and dashboard
 `auth` cookie. The cookie is more sensitive than an API key:
 
-- it is saved only in `state-dir/settings.json` with mode `0600`;
+- it is saved only in `<auth-dir>/opencode-go-pool/settings.json` with mode `0600`;
 - it is never returned by the management API or written to logs;
 - it should not be committed to Git or placed directly in `config.yaml`;
 - it can instead be supplied through a `cookie-file` mounted read-only into

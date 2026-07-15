@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -21,8 +22,7 @@ const (
 	defaultFallbackCool  = 10 * time.Minute
 	defaultRefreshEvery  = 3 * time.Minute
 	defaultStaleAfter    = 20 * time.Minute
-	defaultCooldownDir   = "/root/.cli-proxy-api"
-	defaultStateDir      = "/root/.cli-proxy-api/opencode-go-pool"
+	defaultAuthDir       = "~/.cli-proxy-api"
 	cooldownScanInterval = 10 * time.Second
 	maxWindowBlock       = 35 * 24 * time.Hour
 	claudeProviderKey    = "claude"
@@ -49,8 +49,6 @@ type pluginConfig struct {
 	FallbackCooldown string            `yaml:"fallback-cooldown"`
 	RefreshInterval  string            `yaml:"dashboard-refresh-interval"`
 	StaleAfter       string            `yaml:"dashboard-stale-after"`
-	CooldownDir      string            `yaml:"cooldown-dir"`
-	StateDir         string            `yaml:"state-dir"`
 	Accounts         []accountOverride `yaml:"accounts"`
 }
 
@@ -64,8 +62,7 @@ type settings struct {
 	FallbackCooldown time.Duration
 	RefreshInterval  time.Duration
 	StaleAfter       time.Duration
-	CooldownDir      string
-	StateDir         string
+	AuthDir          string
 	Overrides        []accountOverride
 }
 
@@ -96,8 +93,6 @@ func decodeSettings(configYAML []byte) settings {
 		FallbackCooldown: parseDurationOr(cfg.FallbackCooldown, defaultFallbackCool),
 		RefreshInterval:  parseDurationOr(cfg.RefreshInterval, defaultRefreshEvery),
 		StaleAfter:       parseDurationOr(cfg.StaleAfter, defaultStaleAfter),
-		CooldownDir:      strings.TrimSpace(cfg.CooldownDir),
-		StateDir:         strings.TrimSpace(cfg.StateDir),
 		Overrides:        cfg.Accounts,
 	}
 	if out.CompatName == "" {
@@ -109,12 +104,6 @@ func decodeSettings(configYAML []byte) settings {
 	if out.CPAConfigPath == "" {
 		out.CPAConfigPath = defaultCPAConfigPath
 	}
-	if out.CooldownDir == "" {
-		out.CooldownDir = defaultCooldownDir
-	}
-	if out.StateDir == "" {
-		out.StateDir = defaultStateDir
-	}
 	if out.ThresholdPercent <= 0 || out.ThresholdPercent > 100 {
 		out.ThresholdPercent = defaultThresholdPct
 	}
@@ -124,6 +113,7 @@ func decodeSettings(configYAML []byte) settings {
 // cpaConfig mirrors just the parts of the CPA config file needed to discover
 // OpenCode Go credentials.
 type cpaConfig struct {
+	AuthDir             string `yaml:"auth-dir"`
 	OpenAICompatibility []struct {
 		Name          string `yaml:"name"`
 		BaseURL       string `yaml:"base-url"`
@@ -137,6 +127,35 @@ type cpaConfig struct {
 		APIKey  string `yaml:"api-key"`
 		BaseURL string `yaml:"base-url"`
 	} `yaml:"claude-api-key"`
+}
+
+// resolveAuthDir mirrors CPA's auth-dir resolution so the plugin reads host
+// cooldown files and stores its own state alongside the host credentials.
+func resolveAuthDir(raw string) (string, error) {
+	if raw == "" {
+		raw = defaultAuthDir
+	}
+	if !strings.HasPrefix(raw, "~") {
+		return filepath.Clean(raw), nil
+	}
+
+	home, errHome := os.UserHomeDir()
+	if errHome != nil {
+		return "", fmt.Errorf("resolve auth dir: %w", errHome)
+	}
+	remainder := strings.TrimLeft(strings.TrimPrefix(raw, "~"), `/\`)
+	if remainder == "" {
+		return filepath.Clean(home), nil
+	}
+	remainder = strings.ReplaceAll(remainder, `\`, "/")
+	return filepath.Clean(filepath.Join(home, filepath.FromSlash(remainder))), nil
+}
+
+func pluginStateDir(authDir string) string {
+	if authDir == "" {
+		return ""
+	}
+	return filepath.Join(authDir, pluginID)
 }
 
 // stableIDGenerator replicates CPA's internal/watcher/synthesizer
@@ -186,14 +205,18 @@ type account struct {
 
 // discoverAccounts reads the CPA config file and pairs openai-compatibility
 // and claude-api-key entries that use the same API key into logical accounts.
-func discoverAccounts(cfg settings) ([]*account, error) {
+func discoverAccounts(cfg settings) ([]*account, string, error) {
 	raw, errRead := os.ReadFile(cfg.CPAConfigPath)
 	if errRead != nil {
-		return nil, fmt.Errorf("read CPA config %s: %w", cfg.CPAConfigPath, errRead)
+		return nil, "", fmt.Errorf("read CPA config %s: %w", cfg.CPAConfigPath, errRead)
 	}
 	var cpa cpaConfig
 	if errUnmarshal := yaml.Unmarshal(raw, &cpa); errUnmarshal != nil {
-		return nil, fmt.Errorf("parse CPA config: %w", errUnmarshal)
+		return nil, "", fmt.Errorf("parse CPA config: %w", errUnmarshal)
+	}
+	authDir, errResolve := resolveAuthDir(cpa.AuthDir)
+	if errResolve != nil {
+		return nil, "", fmt.Errorf("resolve CPA auth-dir: %w", errResolve)
 	}
 
 	idGen := newStableIDGenerator()
@@ -267,7 +290,7 @@ func discoverAccounts(cfg settings) ([]*account, error) {
 			acct.Disabled = ov.Disabled
 		}
 	}
-	return ordered, nil
+	return ordered, authDir, nil
 }
 
 func keySuffix(key string) string {

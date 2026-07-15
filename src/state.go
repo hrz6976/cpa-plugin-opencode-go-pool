@@ -103,7 +103,7 @@ func identityKey(acct *account) string {
 // reconfigure rebuilds account mapping from settings, keeping runtime state
 // for accounts whose identity persists.
 func (p *pool) reconfigure(cfg settings, accounts []*account, configErr error) {
-	uiSettings := loadUISettings(cfg.StateDir)
+	uiSettings := loadUISettings(pluginStateDir(cfg.AuthDir))
 	if uiSettings == nil {
 		uiSettings = make(map[string]uiAccountSettings)
 	}
